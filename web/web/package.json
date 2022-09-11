@@ -1,0 +1,32 @@
+{
+  "name": "web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite-plugin-ssr": "^0.4.32",
+    "wouter": "2.8.0-alpha.2",
+    "zustand": "^4.1.1"
+  },
+  "devDependencies": {
+    "@chakra-ui/react": "^2.3.2",
+    "@emotion/react": "^11",
+    "@emotion/styled": "^11",
+    "@explodingcamera/eslint-config": "^23.0.0",
+    "@types/react": "^18.0.17",
+    "@types/react-dom": "^18.0.6",
+    "@vitejs/plugin-react": "^2.1.0",
+    "eslint": "^8.23.0",
+    "framer-motion": "^6",
+    "typescript": "^4.6.4",
+    "vite": "^3.1.0",
+    "vite-plugin-fonts": "^0.6.0"
+  }
+}
