@@ -2,16 +2,44 @@
 extern crate rocket;
 
 mod prisma;
+use anyhow::{Context, Result};
 use prisma::PrismaClient;
-use prisma_client_rust::NewClientError;
 
+use rocket::State;
+use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
+use rocket_okapi::{openapi, openapi_get_routes};
+
+#[openapi]
 #[get("/")]
-fn index() -> &'static str {
+fn index(_db: &State<PrismaClient>) -> &'static str {
     "Hello, world!"
 }
 
-#[tokio::main]
-async fn main() {
-    let client: Result<PrismaClient, NewClientError> = prisma::new_client().await;
-    let rocket = rocket::build().mount("/", routes![index]);
+fn get_docs() -> SwaggerUIConfig {
+    SwaggerUIConfig {
+        url: "/api/v1/openapi.json".to_string(),
+        ..Default::default()
+    }
+}
+
+#[rocket::main]
+async fn main() -> Result<()> {
+    let config = rocket::Config {
+        port: 7777,
+        ..rocket::Config::debug_default()
+    };
+
+    let client: PrismaClient = prisma::new_client()
+        .await
+        .with_context(|| "Failed to create Prisma client")?;
+
+    rocket::build()
+        .manage(client)
+        .mount("/api/v1", openapi_get_routes![index])
+        .mount("/swagger", make_swagger_ui(&get_docs()))
+        .configure(config)
+        .launch()
+        .await
+        .map(|_| ())
+        .with_context(|| "Failed to launch rocket server")
 }

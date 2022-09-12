@@ -3,7 +3,7 @@
 <center>
 <h2>
 
-📚 **STACK** is my starter kit for rapid prototyping of web applications
+📚 **STACK** is my starter kit for rapid prototyping of web applications with user authentication and authorization.
 
 </center>
 
