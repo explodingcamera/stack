@@ -1,18 +1,36 @@
+use anyhow::{Context, Result};
+
 #[macro_use]
 extern crate rocket;
+use rocket::serde::json::{json, Value};
+use rocket::State;
+use rocket_okapi::openapi_get_routes;
+use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 
-mod prisma;
-use anyhow::{Context, Result};
 use prisma::PrismaClient;
 
-use rocket::State;
-use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
-use rocket_okapi::{openapi, openapi_get_routes};
+mod auth;
+mod config;
+mod cors;
+mod prisma;
+mod routes;
+
+pub type Db = State<PrismaClient>;
+pub use auth::User;
+pub use rocket_okapi::openapi;
 
 #[openapi]
 #[get("/")]
-fn index(_db: &State<PrismaClient>) -> &'static str {
-    "Hello, world!"
+fn index() -> &'static str {
+    ":)"
+}
+
+#[catch(404)]
+fn not_found() -> Value {
+    json!({
+        "status": "error",
+        "reason": "Resource was not found."
+    })
 }
 
 fn get_docs() -> SwaggerUIConfig {
@@ -33,11 +51,24 @@ async fn main() -> Result<()> {
         .await
         .with_context(|| "Failed to create Prisma client")?;
 
-    rocket::build()
+    let server = rocket::build()
         .manage(client)
-        .mount("/api/v1", openapi_get_routes![index])
-        .mount("/swagger", make_swagger_ui(&get_docs()))
+        .attach(cors::Cors)
         .configure(config)
+        .mount("/", routes![index])
+        .mount(
+            "/api/v1",
+            openapi_get_routes![
+                index,
+                // users
+                routes::user::login,
+                routes::user::me,
+            ],
+        )
+        .mount("/swagger", make_swagger_ui(&get_docs()))
+        .register("/", catchers![not_found]);
+
+    server
         .launch()
         .await
         .map(|_| ())

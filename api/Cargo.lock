@@ -102,6 +102,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "jsonwebtoken",
+ "lazy_static",
  "okapi",
  "ory-kratos-client",
  "prisma-client-rust",
@@ -110,6 +111,7 @@ dependencies = [
  "rocket_okapi",
  "schemars",
  "serde",
+ "thiserror",
  "tokio",
 ]
 
