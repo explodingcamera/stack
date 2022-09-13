@@ -1,0 +1,14 @@
+[package]
+edition = "2021"
+name = "entity"
+publish = false
+version = "0.1.0"
+
+[lib]
+name = "entity"
+path = "lib.rs"
+
+[dependencies]
+rocket = "0.5.0-rc.2"
+sea-orm = {git = "https://github.com/SeaQL/sea-orm", default-features = false, features = ["macros"], branch = "0.9.x"}
+serde = {version = "1.0", features = ["derive"]}

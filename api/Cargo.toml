@@ -1,26 +1,30 @@
 [package]
 edition = "2021"
 name = "api"
+publish = false
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [".", "entity", "migration"]
 
 [dependencies]
 serde = {version = "1.0", features = ["derive"]}
-tokio = {version = "1.0", features = ["full"]}
 
-jsonwebtoken = {version = "8", default-features = false}
 rocket = "0.5.0-rc.2"
 rocket_okapi = {version = "0.8.0-rc.2", features = ["swagger"]}
 
 okapi = {version = "0.7.0-rc.1"}
 schemars = "0.8.10"
 
-prisma-client-rust = {git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.1"}
-prisma-client-rust-cli = {git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.1"}
-
 ory-kratos-client = "0.10.1"
 
 anyhow = "1"
+async-trait = "0.1"
 lazy_static = "1"
 thiserror = "1"
+
+sea-orm = {git = "https://github.com/SeaQL/sea-orm", branch = "0.9.x", default-features = false, features = ["runtime-tokio-rustls", "sqlx-sqlite"]}
+sea-orm-rocket = {git = "https://github.com/SeaQL/sea-orm", branch = "0.9.x"}
+
+entity = {path = "entity"}
+migration = {path = "migration"}

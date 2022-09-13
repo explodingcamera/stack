@@ -1,31 +1,27 @@
-FROM rust:1-slim-bullseye AS build
+FROM debian:bookworm-slim as base
 ARG KRATOS_VERSION=0.10.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   wget \
-  pkg-config \
-  libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://github.com/ory/kratos/releases/download/v${KRATOS_VERSION}/kratos_${KRATOS_VERSION}-linux_sqlite_64bit.tar.gz && \
   tar -xzf kratos_${KRATOS_VERSION}-linux_sqlite_64bit.tar.gz && \
-  mv kratos /usr/local/bin/kratos
+  mv kratos /usr/local/bin/kratos && \
+  chmod +x /usr/local/bin/kratos && \
+  rm kratos_${KRATOS_VERSION}-linux_sqlite_64bit.tar.gz
 
-WORKDIR /usr/src/api
-COPY . .
-
-RUN cargo install --locked --bin api --path .
-
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   openssl \
   supervisor \
   && rm -rf /var/lib/apt/lists/*
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY --from=build /usr/local/cargo/bin/api /usr/local/bin/api
-COPY --from=build /usr/local/bin/kratos /usr/local/bin/kratos
+COPY ./supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY ./target/release/api /usr/local/bin/api
+COPY --from=base /usr/local/bin/kratos /usr/local/bin/kratos
 
-CMD ["/usr/bin/supervisord"]
+ENTRYPOINT ["/usr/bin/supervisord"]
+CMD ["-c", "/etc/supervisor/conf.d/supervisord.conf"]

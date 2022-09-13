@@ -2,20 +2,18 @@ use anyhow::{Context, Result};
 
 #[macro_use]
 extern crate rocket;
+use db::setup_schema;
 use rocket::serde::json::{json, Value};
-use rocket::State;
 use rocket_okapi::openapi_get_routes;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
-
-use prisma::PrismaClient;
 
 mod auth;
 mod config;
 mod cors;
-mod prisma;
+mod db;
 mod routes;
 
-pub type Db = State<PrismaClient>;
+pub type Db = rocket::State<sea_orm::DatabaseConnection>;
 pub use auth::User;
 pub use rocket_okapi::openapi;
 
@@ -47,12 +45,14 @@ async fn main() -> Result<()> {
         ..rocket::Config::debug_default()
     };
 
-    let client: PrismaClient = prisma::new_client()
+    let conn = sea_orm::Database::connect("sqlite::memory:")
         .await
-        .with_context(|| "Failed to create Prisma client")?;
+        .with_context(|| "failed to connect to database")?;
+
+    setup_schema(&conn).await?;
 
     let server = rocket::build()
-        .manage(client)
+        .manage(conn)
         .attach(cors::Cors)
         .configure(config)
         .mount("/", routes![index])
