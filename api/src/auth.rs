@@ -1,11 +1,13 @@
 use okapi::openapi3::{SecurityScheme, SecuritySchemeData};
-use ory_kratos_client::{apis::v0alpha2_api::to_session, models::Session};
 use rocket::{
     http::Status,
     request::{self, FromRequest, Outcome, Request},
 };
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
+use supertokens::models::{Session, VerifySessionRequest};
 use thiserror::Error;
+
+use crate::config::SUPERTOKENS_CONFIG;
 
 fn get_auth_scheme(required: bool) -> RequestHeaderInput {
     let mut requirements = schemars::Map::new();
@@ -26,12 +28,15 @@ fn get_auth_scheme(required: bool) -> RequestHeaderInput {
     )
 }
 
+#[derive(Default)]
 pub struct OptionalUser {
     pub session: Option<Session>,
+    pub id: Option<String>,
 }
 
 pub struct User {
     pub session: Session,
+    pub id: String,
 }
 
 #[derive(Error, Debug)]
@@ -48,9 +53,24 @@ async fn request_to_session(request: &Request<'_>) -> Result<Session, UserError>
         .get("Authorization")
         .ok_or(UserError::NoSessionCookie)?;
     let session_token = cookie.value();
-    let session = to_session(&crate::config::KRATOS_CONFIG, Some(session_token), None).await;
+    let session = supertokens::apis::session_recipe_api::verify_session(
+        &SUPERTOKENS_CONFIG,
+        "",
+        None,
+        None,
+        Some(VerifySessionRequest {
+            access_token: Some(session_token.to_string()),
+            ..Default::default()
+        }),
+    )
+    .await;
+
+    // let session = to_session(&crate::config::KRATOS_CONFIG, Some(session_token), None).await;
     match session {
-        Ok(session) => Ok(session),
+        Ok(session) => match session.session {
+            Some(session) => Ok(*session),
+            None => Err(UserError::KratosError),
+        },
         Err(_) => Err(UserError::KratosError),
     }
 }
@@ -61,7 +81,10 @@ impl<'r> FromRequest<'r> for User {
 
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         match request_to_session(req).await {
-            Ok(session) => Outcome::Success(User { session }),
+            Ok(session) => match session.user_id.clone() {
+                Some(id) => Outcome::Success(User { session, id }),
+                None => Outcome::Failure((Status::Unauthorized, UserError::KratosError)),
+            },
             Err(e) => Outcome::Failure((Status::Unauthorized, e)),
         }
     }
@@ -74,9 +97,10 @@ impl<'r> FromRequest<'r> for OptionalUser {
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         match request_to_session(req).await {
             Ok(session) => Outcome::Success(OptionalUser {
+                id: session.user_id.clone(),
                 session: Some(session),
             }),
-            Err(_) => Outcome::Success(OptionalUser { session: None }),
+            Err(_) => Outcome::Success(OptionalUser::default()),
         }
     }
 }

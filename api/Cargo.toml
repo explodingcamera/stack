@@ -5,7 +5,7 @@ publish = false
 version = "0.1.0"
 
 [workspace]
-members = [".", "entity", "migration"]
+members = [".", "entity", "migration", "supertokens"]
 
 [dependencies]
 serde = {version = "1.0", features = ["derive"]}
@@ -15,8 +15,6 @@ rocket_okapi = {version = "0.8.0-rc.2", features = ["swagger"]}
 
 okapi = {version = "0.7.0-rc.1"}
 schemars = "0.8.10"
-
-ory-kratos-client = "0.10.1"
 
 anyhow = "1"
 async-trait = "0.1"
@@ -28,3 +26,5 @@ sea-orm-rocket = {git = "https://github.com/SeaQL/sea-orm", branch = "0.9.x"}
 
 entity = {path = "entity"}
 migration = {path = "migration"}
+
+supertokens = {path = "supertokens"}

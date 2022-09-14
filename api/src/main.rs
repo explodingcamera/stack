@@ -14,6 +14,7 @@ mod db;
 mod routes;
 
 pub type Db = rocket::State<sea_orm::DatabaseConnection>;
+pub use auth::OptionalUser;
 pub use auth::User;
 pub use rocket_okapi::openapi;
 
@@ -60,9 +61,12 @@ async fn main() -> Result<()> {
             "/api/v1",
             openapi_get_routes![
                 index,
+                // auth
+                routes::auth::login_passwordless,
+                routes::auth::login_passwordless_verify,
                 // users
-                routes::user::login,
                 routes::user::me,
+                routes::user::update_profile,
             ],
         )
         .mount("/swagger", make_swagger_ui(&get_docs()))
